@@ -1,0 +1,30 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: otel-collector
+    static_configs:
+      - targets: ["otel-collector:8888"]
+
+  # Scrape k3s node metrics via Node Exporter on Server B
+  - job_name: k3s-nodes
+    static_configs:
+      - targets:
+          - "SERVER_B_IP:9100"    # Node Exporter NodePort
+
+  # Scrape kube-state-metrics deployed in k3s
+  - job_name: kube-state-metrics
+    static_configs:
+      - targets:
+          - "SERVER_B_IP:30081"   # kube-state-metrics NodePort
+
+  # Scrape Online Boutique services (via OTel Collector or direct)
+  - job_name: boutique
+    static_configs:
+      - targets:
+          - "SERVER_B_IP:30082"   # adjust per your service NodePorts

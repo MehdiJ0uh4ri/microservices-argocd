@@ -1,0 +1,25 @@
+# This file handles routing to the Online Boutique on Server B (k3s)
+# Traefik on Server A acts as a reverse proxy toward Server B's NodePort
+
+http:
+  routers:
+    boutique:
+      rule: "Host(`boutique.obs.local`)"
+      entryPoints: [websecure]
+      tls: {}
+      service: boutique-backend
+
+  services:
+    boutique-backend:
+      loadBalancer:
+        servers:
+          - url: "http://${SERVER_B_IP}:30080"   # Set SERVER_B_IP in .env or environment
+
+  middlewares:
+    secure-headers:
+      headers:
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+        forceSTSHeader: true
+        referrerPolicy: "strict-origin-when-cross-origin"
