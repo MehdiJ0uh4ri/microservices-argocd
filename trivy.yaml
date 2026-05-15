@@ -1,0 +1,15 @@
+scan:
+  skip-dirs:
+    - node_modules
+    - .git
+    - .github
+
+misconfiguration:
+  include-non-failures: false
+
+secret:
+  config: trivy-secret.yaml
+
+severity:
+  - HIGH
+  - CRITICAL

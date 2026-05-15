@@ -1,0 +1,96 @@
+name: Deploy Online Boutique (k3s + ArgoCD)
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "boutique/**"
+      - ".github/workflows/deploy-boutique.yml"
+
+jobs:
+  # ── DevSecOps gate ──────────────────────────────────────────────
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Trivy scan — Kubernetes manifests
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: config
+          scan-ref: ./boutique
+          severity: HIGH,CRITICAL
+          format: sarif
+          output: trivy-boutique.sarif
+
+      - name: Upload SARIF
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-boutique.sarif
+
+  # ── Bootstrap k3s + ArgoCD (idempotent) ────────────────────────
+  bootstrap:
+    name: Bootstrap Server B
+    runs-on: ubuntu-24.04
+    needs: security-scan
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy bootstrap scripts
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.APP_SSH_HOST }}
+          username: ${{ secrets.APP_SSH_USER }}
+          key: ${{ secrets.APP_SSH_KEY }}
+          source: "boutique/argocd/install-argocd.sh"
+          target: "/tmp"
+          strip_components: 3
+
+      - name: Install k3s + ArgoCD (idempotent)
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.APP_SSH_HOST }}
+          username: ${{ secrets.APP_SSH_USER }}
+          key: ${{ secrets.APP_SSH_KEY }}
+          script: |
+            # Install k3s if not already installed
+            if ! command -v k3s &> /dev/null; then
+              curl -sfL https://get.k3s.io | sh -
+              mkdir -p ~/.kube
+              sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+              sudo chown $(id -u):$(id -g) ~/.kube/config
+            fi
+            # Install ArgoCD
+            bash /tmp/install-argocd.sh
+
+      - name: Sync ArgoCD app + wait
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.APP_SSH_HOST }}
+          username: ${{ secrets.APP_SSH_USER }}
+          key: ${{ secrets.APP_SSH_KEY }}
+          script: |
+            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+            # Apply ArgoCD Application manifest
+            kubectl apply -f /tmp/boutique-app.yml
+            # Wait for boutique to sync
+            kubectl wait --for=condition=Synced=true application/boutique -n argocd --timeout=300s || true
+
+      - name: Notify Slack — success
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: '{"text":"✅ Online Boutique deployed successfully via ArgoCD on ${{ github.sha }}"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify Slack — failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: '{"text":"❌ Online Boutique deployment FAILED — ${{ github.sha }}"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}

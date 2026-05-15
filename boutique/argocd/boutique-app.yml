@@ -1,0 +1,36 @@
+# ArgoCD Application — points to the upstream Google Online Boutique repo
+# ArgoCD will sync this automatically on every push that changes manifests
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: boutique
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    # Using the official Google Online Boutique repo directly
+    # Swap repoURL + path to your fork if you want to customise manifests
+    repoURL: https://github.com/GoogleCloudPlatform/microservices-demo
+    targetRevision: v0.10.1
+    path: release
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: boutique
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 10s
+        factor: 2
+        maxDuration: 3m

@@ -1,0 +1,78 @@
+name: Deploy Observability Stack
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "observability/**"
+      - ".github/workflows/deploy-observability.yml"
+
+jobs:
+  # ── DevSecOps gate ──────────────────────────────────────────────
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy on repo (IaC + secrets)
+        uses: aquasecurity/trivy-action@0.24.0
+        with:
+          scan-type: fs
+          scan-ref: ./observability
+          severity: HIGH,CRITICAL
+          output: trivy-obs.sarif
+          format: sarif
+
+      - name: Upload SARIF to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-obs.sarif
+
+  # ── Deploy ──────────────────────────────────────────────────────
+  deploy:
+    name: Deploy to Server A
+    runs-on: ubuntu-24.04
+    needs: security-scan
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Copy files to Server A
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.OBS_SSH_HOST }}
+          username: ${{ secrets.OBS_SSH_USER }}
+          key: ${{ secrets.OBS_SSH_KEY }}
+          source: "observability/"
+          target: "/opt"
+          strip_components: 1
+
+      - name: Deploy stack via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.OBS_SSH_HOST }}
+          username: ${{ secrets.OBS_SSH_USER }}
+          key: ${{ secrets.OBS_SSH_KEY }}
+          script: |
+            cd /opt/observability
+            docker compose down || true
+            docker compose up -d
+            docker compose ps
+
+      - name: Notify Slack — success
+        if: success()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: '{"text":"✅ Observability stack deployed successfully on ${{ github.sha }}"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
+
+      - name: Notify Slack — failure
+        if: failure()
+        uses: slackapi/slack-github-action@v1.27.0
+        with:
+          payload: '{"text":"❌ Observability stack deployment FAILED — ${{ github.sha }}"}'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
