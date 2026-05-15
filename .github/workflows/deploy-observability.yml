@@ -4,13 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - "observability/**"
+      - "observability-stack/**"
       - ".github/workflows/deploy-observability.yml"
 
 permissions:
   contents: read
   security-events: write
-  
+
 jobs:
   # ── DevSecOps gate ──────────────────────────────────────────────
   security-scan:
@@ -49,7 +49,7 @@ jobs:
           host: ${{ secrets.OBS_SSH_HOST }}
           username: ${{ secrets.OBS_SSH_USER }}
           key: ${{ secrets.OBS_SSH_KEY }}
-          source: "observability/"
+          source: "observability-stack/"
           target: "/opt"
           strip_components: 1
 
@@ -60,7 +60,7 @@ jobs:
           username: ${{ secrets.OBS_SSH_USER }}
           key: ${{ secrets.OBS_SSH_KEY }}
           script: |
-            cd /opt/observability
+            cd /opt/observability-stack
             docker compose down || true
             docker compose up -d
             docker compose ps
