@@ -7,6 +7,10 @@ on:
       - "observability/**"
       - ".github/workflows/deploy-observability.yml"
 
+permissions:
+  contents: read
+  security-events: write
+  
 jobs:
   # ── DevSecOps gate ──────────────────────────────────────────────
   security-scan:
