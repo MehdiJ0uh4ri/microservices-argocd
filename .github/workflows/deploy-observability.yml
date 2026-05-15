@@ -19,7 +19,7 @@ jobs:
         uses: aquasecurity/trivy-action@v0.36.0
         with:
           scan-type: fs
-          scan-ref: ./observability
+          scan-ref: ./observability-stack
           severity: HIGH,CRITICAL
           output: trivy-obs.sarif
           format: sarif
