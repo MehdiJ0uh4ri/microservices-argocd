@@ -13,7 +13,7 @@ http:
     boutique-backend:
       loadBalancer:
         servers:
-          - url: "http://${SERVER_B_IP}:30080"   # Set SERVER_B_IP in .env or environment
+          - url: "http://boutique-k3s.local:30080"   # Set SERVER_B_IP in .env or environment
 
   middlewares:
     secure-headers:

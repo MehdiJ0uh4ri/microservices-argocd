@@ -53,6 +53,28 @@ jobs:
           target: "/opt/observability"
           strip_components: 1
 
+
+
+      - name: Generate Self-Signed Certificates
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.OBS_SSH_HOST }}
+          username: ${{ secrets.OBS_SSH_USER }}
+          key: ${{ secrets.OBS_SSH_KEY }}
+          script: |
+            # Create the certs directory
+            sudo mkdir -p /opt/observability/certs
+            
+            # Generate the self-signed cert if it doesn't already exist
+            if [ ! -f /opt/observability/certs/cert.pem ]; then
+              sudo openssl req -x509 -newkey rsa:4096 \
+                -keyout /opt/observability/certs/key.pem \
+                -out /opt/observability/certs/cert.pem \
+                -days 365 -nodes \
+                -subj "/CN=*.obs.local"
+            fi
+
+            
       - name: Deploy stack via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
@@ -67,6 +89,7 @@ jobs:
 
       - name: Notify Slack — success
         if: success()
+        continue-on-error: true
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: '{"text":"✅ Observability stack deployed successfully on ${{ github.sha }}"}'
@@ -75,6 +98,7 @@ jobs:
 
       - name: Notify Slack — failure
         if: failure()
+        continue-on-error: true
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: '{"text":"❌ Observability stack deployment FAILED — ${{ github.sha }}"}'

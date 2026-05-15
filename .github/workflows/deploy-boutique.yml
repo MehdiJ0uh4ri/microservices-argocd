@@ -81,6 +81,7 @@ jobs:
 
       - name: Notify Slack — success
         if: success()
+        continue-on-error: true
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: '{"text":"✅ Online Boutique deployed successfully via ArgoCD on ${{ github.sha }}"}'
@@ -89,6 +90,7 @@ jobs:
 
       - name: Notify Slack — failure
         if: failure()
+        continue-on-error: true
         uses: slackapi/slack-github-action@v1.27.0
         with:
           payload: '{"text":"❌ Online Boutique deployment FAILED — ${{ github.sha }}"}'
