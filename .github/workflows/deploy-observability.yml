@@ -50,7 +50,7 @@ jobs:
           username: ${{ secrets.OBS_SSH_USER }}
           key: ${{ secrets.OBS_SSH_KEY }}
           source: "observability-stack/"
-          target: "/opt"
+          target: "/opt/observability"
           strip_components: 1
 
       - name: Deploy stack via SSH
