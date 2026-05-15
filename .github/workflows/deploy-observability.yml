@@ -60,7 +60,7 @@ jobs:
           username: ${{ secrets.OBS_SSH_USER }}
           key: ${{ secrets.OBS_SSH_KEY }}
           script: |
-            cd /opt/observability-stack
+            cd /opt/observability
             docker compose down || true
             docker compose up -d
             docker compose ps
