@@ -39,15 +39,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Copy bootstrap scripts
+      - name: Copy all boutique files to server
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.APP_SSH_HOST }}
           username: ${{ secrets.APP_SSH_USER }}
           key: ${{ secrets.APP_SSH_KEY }}
-          source: "boutique/argocd/install-argocd.sh"
-          target: "/tmp"
-          strip_components: 3
+          source: "boutique/argocd/install-argocd.sh,boutique/argocd/boutique-app.yml,boutique/manifests/boutique-namespace.yml,boutique/manifests/frontend-nodeport.yml"
+          target: "/tmp/boutique"
+          strip_components: 2
 
       - name: Install k3s + ArgoCD (idempotent)
         uses: appleboy/ssh-action@v1.0.3
@@ -59,25 +59,35 @@ jobs:
             # Install k3s if not already installed
             if ! command -v k3s &> /dev/null; then
               curl -sfL https://get.k3s.io | sh -
+            fi
+            # Make kubeconfig accessible without sudo
+            if [ ! -f ~/.kube/config ]; then
               mkdir -p ~/.kube
               sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
               sudo chown $(id -u):$(id -g) ~/.kube/config
             fi
-            # Install ArgoCD
-            bash /tmp/install-argocd.sh
+            # Install ArgoCD (idempotent)
+            bash /tmp/boutique/argocd/install-argocd.sh
 
-      - name: Sync ArgoCD app + wait
+      - name: Apply ArgoCD app + NodePort service
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.APP_SSH_HOST }}
           username: ${{ secrets.APP_SSH_USER }}
           key: ${{ secrets.APP_SSH_KEY }}
           script: |
-            export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
-            # Apply ArgoCD Application manifest
-            kubectl apply -f /tmp/boutique-app.yml
-            # Wait for boutique to sync
-            kubectl wait --for=condition=Synced=true application/boutique -n argocd --timeout=300s || true
+            export KUBECONFIG=~/.kube/config
+            # Apply namespace and ArgoCD Application
+            kubectl apply -f /tmp/boutique/manifests/boutique-namespace.yml
+            kubectl apply -f /tmp/boutique/argocd/boutique-app.yml
+            # Wait for ArgoCD to sync the app (up to 5 min)
+            kubectl wait --for=condition=Synced=true application/boutique \
+              -n argocd --timeout=300s || true
+            # Expose frontend via NodePort :30080
+            kubectl apply -f /tmp/boutique/manifests/frontend-nodeport.yml
+            # Show status
+            kubectl get pods -n boutique
+            kubectl get svc -n boutique
 
       - name: Notify Slack — success
         if: success()
