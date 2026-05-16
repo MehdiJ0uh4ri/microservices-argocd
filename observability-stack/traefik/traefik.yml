@@ -28,7 +28,4 @@ providers:
     directory: /etc/traefik/dynamic
     watch: true
 
-tls:
-  certificates:
-    - certFile: /certs/cert.pem
-      keyFile: /certs/key.pem
+

@@ -1,6 +1,11 @@
 # This file handles routing to the Online Boutique on Server B (k3s)
 # Traefik on Server A acts as a reverse proxy toward Server B's NodePort
 
+tls:
+  certificates:
+    - certFile: /certs/cert.pem
+      keyFile: /certs/key.pem
+
 http:
   routers:
     boutique:
