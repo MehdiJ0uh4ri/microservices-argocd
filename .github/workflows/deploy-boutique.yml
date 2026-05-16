@@ -52,7 +52,7 @@ jobs:
           key: ${{ secrets.APP_SSH_KEY }}
           source: "boutique/argocd/install-argocd.sh,boutique/argocd/boutique-app.yml,boutique/manifests/boutique-namespace.yml,boutique/manifests/frontend-nodeport.yml"
           target: "/tmp/boutique"
-          strip_components: 2
+          strip_components: 1
 
       - name: Install k3s + ArgoCD (idempotent)
         uses: appleboy/ssh-action@v1.0.3
