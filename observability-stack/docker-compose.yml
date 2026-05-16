@@ -15,7 +15,7 @@ services:
 
   # ── Traefik ────────────────────────────────────────────────────
   traefik:
-    image: traefik:v3.1.4
+    image: traefik:v3.2.2
     container_name: traefik
     restart: unless-stopped
     ports:
@@ -26,7 +26,6 @@ services:
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./traefik/dynamic:/etc/traefik/dynamic:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - /opt/observability/certs:/certs:ro   # place your TLS certs here
     networks: [obs]
 

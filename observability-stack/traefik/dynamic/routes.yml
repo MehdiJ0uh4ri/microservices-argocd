@@ -1,5 +1,5 @@
 # This file handles routing to the Online Boutique on Server B (k3s)
-# Traefik on Server A acts as a reverse proxy toward Server B's NodePort
+# Traefik on Server A acts as a reverse proxy toward Server B and local observability services.
 
 tls:
   certificates:
@@ -14,11 +14,55 @@ http:
       tls: {}
       service: boutique-backend
 
+    prometheus:
+      rule: "Host(`prometheus.obs.local`)"
+      entryPoints: [websecure]
+      tls: {}
+      service: prometheus-backend
+
+    grafana:
+      rule: "Host(`grafana.obs.local`)"
+      entryPoints: [websecure]
+      tls: {}
+      service: grafana-backend
+
+    loki:
+      rule: "Host(`loki.obs.local`)"
+      entryPoints: [websecure]
+      tls: {}
+      service: loki-backend
+
+    jaeger:
+      rule: "Host(`jaeger.obs.local`)"
+      entryPoints: [websecure]
+      tls: {}
+      service: jaeger-backend
+
   services:
     boutique-backend:
       loadBalancer:
         servers:
-          - url: "http://boutique-k3s.local:30080"   # Set SERVER_B_IP in .env or environment
+          - url: "http://${SERVER_B_IP}:30080"   # Set SERVER_B_IP in .env or environment
+
+    prometheus-backend:
+      loadBalancer:
+        servers:
+          - url: "http://prometheus:9090"
+
+    grafana-backend:
+      loadBalancer:
+        servers:
+          - url: "http://grafana:3000"
+
+    loki-backend:
+      loadBalancer:
+        servers:
+          - url: "http://loki:3100"
+
+    jaeger-backend:
+      loadBalancer:
+        servers:
+          - url: "http://jaeger:16686"
 
   middlewares:
     secure-headers:
