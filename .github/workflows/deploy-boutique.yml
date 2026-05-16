@@ -65,14 +65,15 @@ jobs:
             if ! command -v k3s &> /dev/null; then
               curl -sfL https://get.k3s.io | sh -
             fi
-            # Make kubeconfig accessible without sudo
-            if [ ! -f ~/.kube/config ]; then
-              mkdir -p ~/.kube
-              sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
-              sudo chown $(id -u):$(id -g) ~/.kube/config
-            fi
-            # Install ArgoCD (idempotent)
-            bash /tmp/boutique/argocd/install-argocd.sh
+            # Wait for k3s to be ready and kubeconfig to exist
+            echo "Waiting for k3s to be ready..."
+            timeout 120 bash -c 'until sudo kubectl get nodes &>/dev/null; do sleep 3; done'
+            # Make kubeconfig accessible without sudo (refresh every run)
+            mkdir -p ~/.kube
+            sudo cp /etc/rancher/k3s/k3s.yaml ~/.kube/config
+            sudo chown $(id -u):$(id -g) ~/.kube/config
+            # Install ArgoCD — script uses /etc/rancher/k3s/k3s.yaml so needs sudo
+            sudo bash /tmp/boutique/argocd/install-argocd.sh
 
       - name: Apply ArgoCD app + NodePort service
         uses: appleboy/ssh-action@v1.0.3
