@@ -1,5 +1,10 @@
 name: Deploy Online Boutique (k3s + ArgoCD)
 
+permissions:
+  contents: read
+  security-events: write
+
+
 on:
   push:
     branches: [main]
