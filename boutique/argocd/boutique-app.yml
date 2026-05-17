@@ -15,7 +15,7 @@ spec:
     # Swap repoURL + path to your fork if you want to customise manifests
     repoURL: https://github.com/GoogleCloudPlatform/microservices-demo
     targetRevision: v0.10.1
-    path: release
+    path: kubernetes-manifests
 
   destination:
     server: https://kubernetes.default.svc
