@@ -3,10 +3,15 @@ global:
   sendAnonymousUsage: false
 
 log:
-  level: INFO
+  level: DEBUG
+  format: common
+
+accessLog: {}
+
 
 api:
-  dashboard: false   # disable dashboard in prod; enable if needed
+  dashboard: true
+  insecure: true    # exposes API on :8080 — disable in prod
 
 entryPoints:
   web:

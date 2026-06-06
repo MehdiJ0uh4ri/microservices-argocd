@@ -43,12 +43,7 @@ services:
       - "--storage.tsdb.retention.time=15d"
       - "--web.enable-lifecycle"
     networks: [obs]
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.prometheus.rule=Host(`prometheus.obs.local`)"
-      - "traefik.http.routers.prometheus.entrypoints=websecure"
-      - "traefik.http.routers.prometheus.tls=true"
-      - "traefik.http.services.prometheus.loadbalancer.server.port=9090"
+    # Routing is handled by traefik/dynamic/routes.yml (file provider)
 
   # ── Grafana ────────────────────────────────────────────────────
   grafana:
@@ -64,12 +59,7 @@ services:
       - ./grafana/provisioning:/etc/grafana/provisioning:ro
     networks: [obs]
     depends_on: [prometheus, loki, jaeger]
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.grafana.rule=Host(`grafana.obs.local`)"
-      - "traefik.http.routers.grafana.entrypoints=websecure"
-      - "traefik.http.routers.grafana.tls=true"
-      - "traefik.http.services.grafana.loadbalancer.server.port=3000"
+    # Routing is handled by traefik/dynamic/routes.yml (file provider)
 
   # ── Loki ───────────────────────────────────────────────────────
   loki:
@@ -81,12 +71,7 @@ services:
       - loki_data:/loki
     command: -config.file=/etc/loki/loki-config.yml
     networks: [obs]
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.loki.rule=Host(`loki.obs.local`)"
-      - "traefik.http.routers.loki.entrypoints=websecure"
-      - "traefik.http.routers.loki.tls=true"
-      - "traefik.http.services.loki.loadbalancer.server.port=3100"
+    # Routing is handled by traefik/dynamic/routes.yml (file provider)
 
   # ── Jaeger ─────────────────────────────────────────────────────
   jaeger:
@@ -98,12 +83,7 @@ services:
     volumes:
       - jaeger_data:/badger
     networks: [obs]
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.jaeger.rule=Host(`jaeger.obs.local`)"
-      - "traefik.http.routers.jaeger.entrypoints=websecure"
-      - "traefik.http.routers.jaeger.tls=true"
-      - "traefik.http.services.jaeger.loadbalancer.server.port=16686"
+    # Routing is handled by traefik/dynamic/routes.yml (file provider)
 
   # ── OpenTelemetry Collector ────────────────────────────────────
   otel-collector:

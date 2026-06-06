@@ -1,6 +1,16 @@
-# This file handles routing to the Online Boutique on Server B (k3s)
-# Traefik on Server A acts as a reverse proxy toward Server B and local observability services.
-
+# TLS certificate store for all obs.local domains.
+# IMPORTANT: Traefik v3 runs as a non-root user inside the container.
+# key.pem MUST be chmod 644 (not 600) or Traefik silently falls back to its
+# internal self-signed cert and all routers return 404.
+#
+# Generate / regenerate certs:
+#   sudo openssl req -x509 -newkey rsa:2048 \
+#     -keyout /opt/observability/certs/key.pem \
+#     -out  /opt/observability/certs/cert.pem \
+#     -days 365 -nodes -subj "/CN=obs.local" \
+#     -addext "subjectAltName=DNS:grafana.obs.local,DNS:prometheus.obs.local,DNS:loki.obs.local,DNS:jaeger.obs.local,DNS:boutique.obs.local"
+#   sudo chmod 644 /opt/observability/certs/key.pem
+#   docker restart traefik
 tls:
   certificates:
     - certFile: /certs/cert.pem
@@ -42,7 +52,7 @@ http:
     boutique-backend:
       loadBalancer:
         servers:
-          - url: "http://${SERVER_B_IP}:30080"   # Set SERVER_B_IP in .env or environment
+          - url: "http://boutique-k3s.local:30080"
 
     prometheus-backend:
       loadBalancer:
@@ -63,12 +73,3 @@ http:
       loadBalancer:
         servers:
           - url: "http://jaeger:16686"
-
-  middlewares:
-    secure-headers:
-      headers:
-        stsSeconds: 31536000
-        stsIncludeSubdomains: true
-        stsPreload: true
-        forceSTSHeader: true
-        referrerPolicy: "strict-origin-when-cross-origin"
