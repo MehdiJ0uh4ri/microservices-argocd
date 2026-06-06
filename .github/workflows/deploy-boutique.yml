@@ -109,6 +109,6 @@ jobs:
         continue-on-error: true
         uses: slackapi/slack-github-action@v1.27.0
         with:
-          payload: '{"text":"❌ Online Boutique deployment FAILED — ${{ github.sha }}"}'
+          payload: '{"text":" Online Boutique deployment FAILED — ${{ github.sha }}"}'
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK }}
